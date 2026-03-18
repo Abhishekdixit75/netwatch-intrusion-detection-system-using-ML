@@ -11,3 +11,8 @@ wheels/
 
 # dataset are too large to push
 data/raw/CIC-IDS2018
+data/raw/UNSW_NB15
+
+# model and processed data are also large
+ml_pipeline/models/
+data/processed/
