@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# dataset are too large to push
+data/raw/CIC-IDS2018
