@@ -1,12 +1,8 @@
 """
 ml_pipeline/train.py
 
-Trains all 4 models on UNSW-NB15 selected features and saves:
-  - ml_pipeline/models/rf_model.pkl
-  - ml_pipeline/models/iso_model.pkl
-  - ml_pipeline/models/xgb_model.pkl
-  - ml_pipeline/models/svm_model.pkl
-  - ml_pipeline/models/training_meta.json
+Trains and fine-tunes all 4 models on UNSW-NB15 selected features.
+Now implements RandomizedSearchCV for hyperparameter optimization to maximize accuracy and F1 metrics.
 """
 
 import json
@@ -17,7 +13,9 @@ import numpy as np
 import pandas as pd
 from sklearn.ensemble import RandomForestClassifier, IsolationForest
 from sklearn.svm import SVC
-from sklearn.metrics import accuracy_score
+from sklearn.metrics import accuracy_score, f1_score
+from sklearn.model_selection import RandomizedSearchCV
+from sklearn.utils.class_weight import compute_sample_weight
 from xgboost import XGBClassifier
 
 # ── Paths ─────────────────────────────────────────────────────────────────────
@@ -44,131 +42,108 @@ print(f"  Samples  : {len(X_train):,}")
 print(f"  Features : {len(FEATURE_COLS)}")
 print(f"  Classes  : {np.unique(y_train)}")
 
-# ── Helper ────────────────────────────────────────────────────────────────────
-def train_model(name, model, X, y=None):
-    print(f"\nTraining {name}...")
+# ── Tuning Helper ─────────────────────────────────────────────────────────────
+def optimize_model(name, model, grid, X, y, sample_weight=None):
+    print(f"\n[Search] Optimizing {name}...")
     t0 = time.time()
-    if y is not None:
-        model.fit(X, y)
-        preds = model.predict(X)
-        acc   = accuracy_score(y, preds)
+    
+    # Using 3-fold CV and 10 iterations to balance depth vs speed
+    search = RandomizedSearchCV(
+        model, 
+        param_distributions=grid,
+        n_iter=10,
+        cv=3,
+        scoring='f1_weighted',
+        n_jobs=-1,
+        random_state=42,
+        verbose=1
+    )
+    
+    if sample_weight is not None:
+        search.fit(X, y, sample_weight=sample_weight)
     else:
-        # Isolation Forest — unsupervised, no y
-        model.fit(X)
-        acc = None
+        search.fit(X, y)
+        
     elapsed = time.time() - t0
-    print(f"  Done in {elapsed:.1f}s" + (f"  |  Train accuracy: {acc*100:.2f}%" if acc else "  |  Unsupervised"))
-    return model, elapsed, acc
+    print(f"  Optimization took {elapsed:.1f}s")
+    print(f"  Best params: {search.best_params_}")
+    
+    # Final check on training set
+    best_model = search.best_estimator_
+    preds = best_model.predict(X)
+    acc = accuracy_score(y, preds)
+    f1 = f1_score(y, preds, average='weighted')
+    print(f"  Post-tuning Train Acc: {acc*100:.2f}% | F1: {f1:.4f}")
+    
+    return best_model, elapsed, acc
 
 meta = {}
 
-# ── 2. Random Forest (Primary Classifier) ─────────────────────────────────────
-rf, rf_time, rf_acc = train_model(
-    "Random Forest",
-    RandomForestClassifier(
-        n_estimators=200,
-        max_depth=20,
-        min_samples_leaf=2,
-        class_weight="balanced",  # handles class imbalance (Worms=130 samples)
-        n_jobs=-1,
-        random_state=42
-    ),
-    X_train, y_train
-)
-joblib.dump(rf, os.path.join(MODEL_DIR, "rf_model.pkl"))
-print("  Saved → ml_pipeline/models/rf_model.pkl")
+# ── 2. Random Forest Optimization ─────────────────────────────────────────────
+rf_grid = {
+    'n_estimators': [100, 200, 300],
+    'max_depth': [10, 20, 30, None],
+    'min_samples_split': [2, 5, 10],
+    'min_samples_leaf': [1, 2, 4],
+    'max_features': ['sqrt', 'log2']
+}
+
+rf_base = RandomForestClassifier(class_weight="balanced", random_state=42)
+rf_best, rf_time, rf_acc = optimize_model("Random Forest", rf_base, rf_grid, X_train, y_train)
+
+joblib.dump(rf_best, os.path.join(MODEL_DIR, "rf_model.pkl"))
 meta["random_forest"] = {"train_time_sec": round(rf_time, 2), "train_accuracy": round(rf_acc, 4)}
 
-# ── 3. Isolation Forest (Anomaly Detector) ────────────────────────────────────
-# Trained on NORMAL traffic only — flags anything that deviates as anomalous
-X_normal = train[train["label"] == 0][FEATURE_COLS].values
-print(f"\nTraining Isolation Forest on {len(X_normal):,} normal samples only...")
-
-iso, iso_time, _ = train_model(
-    "Isolation Forest",
-    IsolationForest(
-        n_estimators=100,
-        contamination=0.05,   # expect ~5% anomalies in unseen traffic
-        n_jobs=-1,
-        random_state=42
-    ),
-    X_normal
-)
-joblib.dump(iso, os.path.join(MODEL_DIR, "iso_model.pkl"))
-print("  Saved → ml_pipeline/models/iso_model.pkl")
-meta["isolation_forest"] = {"train_time_sec": round(iso_time, 2), "train_accuracy": None, "note": "Trained on normal traffic only"}
-
-# ── 4. XGBoost (Comparison Model) ─────────────────────────────────────────────
-# Compute sample weights manually for XGBoost (no class_weight param)
-from sklearn.utils.class_weight import compute_sample_weight
+# ── 3. XGBoost Optimization ───────────────────────────────────────────────────
+# Fix for previous bug: XGBoost now uses correctly computed sample weights during search
 sample_weights = compute_sample_weight(class_weight="balanced", y=y_train)
 
-xgb, xgb_time, xgb_acc = train_model(
-    "XGBoost",
-    XGBClassifier(
-        n_estimators=200,
-        max_depth=8,
-        learning_rate=0.1,
-        subsample=0.8,
-        colsample_bytree=0.8,
-        use_label_encoder=False,
-        eval_metric="mlogloss",
-        n_jobs=-1,
-        random_state=42,
-        verbosity=0
-    ),
-    X_train, y_train
-)
-joblib.dump(xgb, os.path.join(MODEL_DIR, "xgb_model.pkl"))
-print("  Saved → ml_pipeline/models/xgb_model.pkl")
+xgb_grid = {
+    'n_estimators': [100, 200, 400],
+    'max_depth': [3, 6, 10],
+    'learning_rate': [0.01, 0.05, 0.1, 0.2],
+    'subsample': [0.7, 0.9],
+    'colsample_bytree': [0.7, 0.9],
+    'gamma': [0, 0.1, 0.2]
+}
+
+xgb_base = XGBClassifier(use_label_encoder=False, eval_metric="mlogloss", random_state=42, verbosity=0)
+xgb_best, xgb_time, xgb_acc = optimize_model("XGBoost", xgb_base, xgb_grid, X_train, y_train, sample_weight=sample_weights)
+
+joblib.dump(xgb_best, os.path.join(MODEL_DIR, "xgb_model.pkl"))
 meta["xgboost"] = {"train_time_sec": round(xgb_time, 2), "train_accuracy": round(xgb_acc, 4)}
 
-# ── 5. SVM (Comparison Model) ─────────────────────────────────────────────────
-# SVM is slow on large datasets — subsample to 20k for training
-print("\nSVM: subsampling to 20,000 rows (SVM does not scale to full dataset)...")
-np.random.seed(42)
-idx = np.random.choice(len(X_train), size=min(20000, len(X_train)), replace=False)
-X_svm = X_train[idx]
-y_svm = y_train[idx]
+# ── 4. Isolation Forest (Fixed Refinement) ────────────────────────────────────
+X_normal = train[train["label"] == 0][FEATURE_COLS].values
+print(f"\nTraining Isolation Forest on {len(X_normal):,} normal samples...")
+t0 = time.time()
+iso = IsolationForest(n_estimators=200, contamination=0.03, n_jobs=-1, random_state=42)
+iso.fit(X_normal)
+iso_time = time.time() - t0
+joblib.dump(iso, os.path.join(MODEL_DIR, "iso_model.pkl"))
+meta["isolation_forest"] = {"train_time_sec": round(iso_time, 2), "train_accuracy": None, "note": "Fine-tuned contamination to 0.03"}
 
-svm, svm_time, svm_acc = train_model(
-    "SVM",
-    SVC(
-        kernel="rbf",
-        C=1.0,
-        gamma="scale",
-        class_weight="balanced",
-        decision_function_shape="ovr",
-        random_state=42
-    ),
-    X_svm, y_svm
-)
-joblib.dump(svm, os.path.join(MODEL_DIR, "svm_model.pkl"))
-print("  Saved → ml_pipeline/models/svm_model.pkl")
-meta["svm"] = {
-    "train_time_sec": round(svm_time, 2),
-    "train_accuracy": round(svm_acc, 4),
-    "note": f"Trained on {len(X_svm):,} subsampled rows"
+# ── 5. SVM Optimization (Efficiency Pass) ─────────────────────────────────────
+# SVM is still slow; search on 10k but optimize C and Gamma
+idx = np.random.choice(len(X_train), size=10000, replace=False)
+X_svm_small = X_train[idx]
+y_svm_small = y_train[idx]
+
+svm_grid = {
+    'C': [0.1, 1, 10],
+    'gamma': ['scale', 'auto', 1, 0.1],
+    'kernel': ['rbf', 'poly']
 }
+svm_base = SVC(class_weight="balanced", random_state=42)
+svm_best, svm_time, svm_acc = optimize_model("SVM", svm_base, svm_grid, X_svm_small, y_svm_small)
+
+joblib.dump(svm_best, os.path.join(MODEL_DIR, "svm_model.pkl"))
+meta["svm"] = {"train_time_sec": round(svm_time, 2), "train_accuracy": round(svm_acc, 4), "note": "Tuned on 10k rows"}
 
 # ── 6. Save training metadata ─────────────────────────────────────────────────
 with open(os.path.join(MODEL_DIR, "training_meta.json"), "w") as f:
     json.dump(meta, f, indent=2)
-print("\nSaved → ml_pipeline/models/training_meta.json")
 
-# ── 7. Summary ────────────────────────────────────────────────────────────────
-print()
-print("=" * 50)
-print("TRAINING COMPLETE")
-print("=" * 50)
-for model_name, info in meta.items():
-    acc_str = f"{info['train_accuracy']*100:.2f}%" if info.get("train_accuracy") else "N/A (unsupervised)"
-    print(f"  {model_name:<20} time: {info['train_time_sec']}s   train_acc: {acc_str}")
-print()
-print("Models saved:")
-print("  ml_pipeline/models/rf_model.pkl")
-print("  ml_pipeline/models/iso_model.pkl")
-print("  ml_pipeline/models/xgb_model.pkl")
-print("  ml_pipeline/models/svm_model.pkl")
-print()
-print("Next step → run ml_pipeline/evaluate.py")
+print("\n" + "="*50)
+print("FINE-TUNING COMPLETE")
+print("="*50)
