@@ -104,9 +104,21 @@ def run_simulator(interval: float, limit: int, shuffle: bool, attacks_only: bool
                         res = response.json()
                         sev = res.get("severity", "Normal")
                         
+                        # ANSI Color Codes
+                        COLORS = {
+                            "Critical": "\033[95m\033[1m", # Bold Magenta
+                            "High": "\033[91m",           # Red
+                            "Medium": "\033[93m",         # Yellow
+                            "Low": "\033[92m",            # Gray
+                            "Normal": "\033[94m"          # Blue
+                        }
+                        RESET = "\033[0m"
+                        
+                        color = COLORS.get(sev, "")
+                        
                         log_msg = (f"[{count+1:04}] IP: {source_ip:<15} | "
                                    f"Type: {res['attack_type']:<15} | "
-                                   f"Severity: {sev:<8} | "
+                                   f"Severity: {color}{sev:<8}{RESET} | "
                                    f"Time: {elapsed*1000:4.1f}ms")
                         
                         if sev in ["Critical", "High"]:

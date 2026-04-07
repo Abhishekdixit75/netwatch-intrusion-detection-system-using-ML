@@ -52,20 +52,17 @@ def style_severity(val):
 with c1:
     st.subheader("Metadata")
     st.markdown(f"""
-    <div style="background-color: var(--secondary-background-color); padding: 1rem; border: 1px solid var(--secondary-background-color); border-radius: 4px;">
-        <p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">UUID</p>
-        <p style="margin:0; font-size:1.1rem; color:var(--text-color); margin-bottom:1rem;">NETWATCH-{detail['id']:05}</p>
-        
-        <p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Traffic Type</p>
-        <p style="margin:0; font-size:1.1rem; color:var(--text-color); margin-bottom:1rem;">{detail['attack_type'].title()}</p>
-        
-        <p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Severity</p>
-        <p style="margin:0; font-size:1.1rem; {style_severity(detail['severity'])} margin-bottom:1rem;">{detail['severity'].title()}</p>
-        
-        <p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Anomaly Index</p>
-        <p style="margin:0; font-size:1.1rem; color:var(--text-color);">{round(detail['anomaly_score'], 4)}</p>
-    </div>
-    """, unsafe_allow_html=True)
+<div style="background-color: var(--secondary-background-color); padding: 1rem; border: 1px solid var(--secondary-background-color); border-radius: 4px;">
+<p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">UUID</p>
+<p style="margin:0; font-size:1.1rem; color:var(--text-color); margin-bottom:1rem;">NETWATCH-{detail['id']:05}</p>
+<p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Traffic Type</p>
+<p style="margin:0; font-size:1.1rem; color:var(--text-color); margin-bottom:1rem;">{detail['attack_type'].title()}</p>
+<p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Severity</p>
+<p style="margin:0; font-size:1.1rem; {style_severity(detail['severity'])} margin-bottom:1rem;">{detail['severity'].title()}</p>
+<p style="margin:0; font-size:0.7rem; color:var(--text-color); opacity:0.7;">Anomaly Index</p>
+<p style="margin:0; font-size:1.1rem; color:var(--text-color);">{round(detail['anomaly_score'], 4)}</p>
+</div>
+""", unsafe_allow_html=True)
 
 with c2:
     st.subheader("Attribution Matrix")

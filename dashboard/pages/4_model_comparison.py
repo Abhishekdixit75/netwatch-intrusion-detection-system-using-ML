@@ -50,10 +50,10 @@ fig.add_trace(go.Bar(
 ))
 
 fig.add_trace(go.Bar(
-    x=table_df.index, y=table_df["F1_score"],
+    x=table_df.index, y=table_df["F1_Score"],
     name="F1 Score", marker_color="#64748b",
     marker_line_color="#0ea5e9", marker_line_width=1,
-    text=table_df["F1_score"].round(3), textposition='auto',
+    text=table_df["F1_Score"].round(3), textposition='auto',
 ))
 
 fig.update_layout(
