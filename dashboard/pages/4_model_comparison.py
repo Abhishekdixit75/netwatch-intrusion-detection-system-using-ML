@@ -31,7 +31,8 @@ numeric_cols = ["accuracy", "precision", "recall", "f1_score", "inference_ms"]
 table_df = df[df.columns.intersection(numeric_cols)].apply(pd.to_numeric, errors="coerce")
 import numpy as np
 table_df = table_df.select_dtypes(include=[np.number])
-table_df.columns = [c.title() for c in table_df.columns]
+# Explicit mapping for predictable Chart naming
+table_df.columns = [c.replace("_", " ").title() for c in table_df.columns]
 
 st.subheader("Performance Matrix")
 st.dataframe(table_df.style.highlight_max(axis=0, color="rgba(0, 112, 243, 0.2)"), width="stretch")
@@ -50,10 +51,10 @@ fig.add_trace(go.Bar(
 ))
 
 fig.add_trace(go.Bar(
-    x=table_df.index, y=table_df["F1_Score"],
+    x=table_df.index, y=table_df["F1 Score"],
     name="F1 Score", marker_color="#64748b",
     marker_line_color="#0ea5e9", marker_line_width=1,
-    text=table_df["F1_Score"].round(3), textposition='auto',
+    text=table_df["F1 Score"].round(3), textposition='auto',
 ))
 
 fig.update_layout(

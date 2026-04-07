@@ -5,6 +5,9 @@ import pandas as pd
 import plotly.express as px
 from utils import apply_saas_theme, dashboard_header, format_local_time
 
+# Suppress downcasting and concatenation warnings for real-time history
+pd.set_option('future.no_silent_downcasting', True)
+
 # ── Setup ──
 BACKEND = "http://localhost:8000"
 st.set_page_config(page_title="Monitor / Live", layout="wide")

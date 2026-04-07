@@ -10,27 +10,27 @@ def apply_saas_theme():
                 font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             }
             
-            /* 2. Streamlit Overrides */
-            #MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; display: none; }
+            /* 2. Streamlit Structural Refinement */
+            footer, [data-testid="stDecoration"] { visibility: hidden; display: none; }
             [data-testid="stToolbar"] { right: 2rem; top: 1rem; }
             
-            /* 3. Layout */
-            .block-container { padding: 3rem 5rem !important; }
+            /* 3. High-Density Layout */
+            [data-testid="stSidebar"] { border-right: 1px solid var(--secondary-background-color); }
+            .block-container { padding: 3rem 4rem !important; max-width: 1200px; }
             
             /* 4. Enterprise Headers */
-            h1 { font-size: 1.5rem !important; font-weight: 600; letter-spacing: -0.02em; margin-bottom: 0.5rem; }
-            h2 { font-size: 1.1rem !important; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; }
-            h3 { font-size: 0.9rem !important; font-weight: 600; color: var(--text-color) !important; opacity: 0.7; text-transform: uppercase; letter-spacing: 0.05em; }
+            h1 { font-size: 2.2rem !important; font-weight: 700; letter-spacing: -0.04em; margin-bottom: 0.25rem; }
+            h2 { font-size: 1.25rem !important; font-weight: 600; margin-top: 2rem; margin-bottom: 1rem; letter-spacing: -0.02em; }
+            h3 { font-size: 0.8rem !important; font-weight: 600; color: var(--text-color) !important; opacity: 0.6; text-transform: uppercase; letter-spacing: 0.1em; }
 
             /* 5. Metrics */
             div[data-testid="stMetric"] {
-                background-color: var(--secondary-background-color);
-                padding: 1.5rem !important;
-                border-radius: 4px;
-                border: 1px solid var(--secondary-background-color);
+                background-color: transparent;
+                padding: 1rem 0 !important;
+                border-bottom: 1px solid var(--secondary-background-color);
             }
-            [data-testid="stMetricValue"] { font-size: 1.75rem !important; font-weight: 500 !important; color: var(--text-color); }
-            [data-testid="stMetricLabel"] { font-size: 0.75rem !important; color: var(--text-color) !important; opacity: 0.8; font-weight: 500; }
+            [data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 600 !important; color: var(--text-color); }
+            [data-testid="stMetricLabel"] { font-size: 0.8rem !important; color: var(--text-color) !important; opacity: 0.7; font-weight: 500; text-transform: uppercase; }
 
             /* 6. Clean Borders & Tables */
             .stDataFrame, div[data-testid="stTable"], .stTable { 

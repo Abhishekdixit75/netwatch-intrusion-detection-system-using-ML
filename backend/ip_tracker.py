@@ -38,15 +38,19 @@ def record_alert(ip: str):
         rep.alert_count += 1
         rep.last_seen = now
         
-        # Optimized thresholds for demo feedback
-        if burst_count >= 5:
+        # Optimized escalation logic for demo
+        # 1. Once blocked, always blocked (Permanent defense)
+        if rep.status == "blocked":
+            pass
+        # 2. Block if high-frequency burst (5 in 60s) OR high-volume history (20 total)
+        elif burst_count >= 5 or rep.alert_count >= 20:
             rep.status = "blocked"
+        # 3. Watch if moderate activity (3 in 60s)
         elif burst_count >= 3:
             rep.status = "watching"
-        else:
-            # Maintain monitoring status if not escalated
-            if not rep.status:
-                rep.status = "monitoring"
+        # 4. Default to monitoring
+        elif not rep.status or rep.status == "monitoring":
+            rep.status = "monitoring"
             
         db.commit()
     except Exception as e:

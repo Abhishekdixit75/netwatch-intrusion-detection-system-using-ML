@@ -6,6 +6,7 @@ from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib import colors
+import pandas as pd
 from utils import apply_saas_theme, dashboard_header, format_local_time
 
 # ── Setup ──
@@ -79,7 +80,7 @@ def style_severity(val):
 
 st.subheader("Audit Preview")
 try:
-    recent_alerts = requests.get(f"{BACKEND}/alerts?limit=5", timeout=2).json()
+    recent_alerts = requests.get(f"{BACKEND}/alerts?limit=5", timeout=5).json()
     if recent_alerts:
         prev_df = pd.DataFrame(recent_alerts)[["timestamp", "source_ip", "attack_type", "severity"]]
         prev_df["timestamp"] = prev_df["timestamp"].apply(format_local_time)
