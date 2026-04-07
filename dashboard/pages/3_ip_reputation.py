@@ -63,7 +63,7 @@ def style_status(val):
 
 st.dataframe(
     df_disp.style.map(style_status, subset=['Status']), 
-    use_container_width=True, 
+    width="stretch", 
     hide_index=True
 )
 

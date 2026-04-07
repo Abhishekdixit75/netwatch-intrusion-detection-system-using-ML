@@ -86,7 +86,7 @@ try:
         prev_df.columns = [c.title().replace("_", " ") for c in prev_df.columns]
         st.dataframe(
             prev_df.style.map(style_severity, subset=['Severity']),
-            use_container_width=True,
+            width="stretch",
             hide_index=True
         )
 except:

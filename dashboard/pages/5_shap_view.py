@@ -90,7 +90,7 @@ with c2:
             margin=dict(l=0, r=0, t=10, b=0),
             height=450
         )
-        st.plotly_chart(fig, use_container_width=True, theme="streamlit", config={'displayModeBar': False})
+        st.plotly_chart(fig, width="stretch", theme="streamlit", config={'displayModeBar': False})
         st.caption("Red: Impact toward Attack | Blue: Impact toward Normal")
     else:
         st.warning("Heuristic data stream empty.")

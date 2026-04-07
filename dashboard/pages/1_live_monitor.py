@@ -64,7 +64,7 @@ def monitor_fragment():
             margin=dict(l=0, r=0, t=0, b=0),
             height=60,
         )
-        st.plotly_chart(fig, use_container_width=True, theme="streamlit", config={'displayModeBar': False})
+        st.plotly_chart(fig, width="stretch", theme="streamlit", config={'displayModeBar': False})
         st.caption("Packets per Second")
 
         # 3. Live Incident Log
@@ -92,7 +92,7 @@ def monitor_fragment():
             df = pd.DataFrame(rows)
             st.dataframe(
                 df.style.map(style_severity, subset=['Severity']), 
-                use_container_width=True, 
+                width="stretch", 
                 hide_index=True
             )
 

@@ -34,7 +34,7 @@ table_df = table_df.select_dtypes(include=[np.number])
 table_df.columns = [c.title() for c in table_df.columns]
 
 st.subheader("Performance Matrix")
-st.dataframe(table_df.style.highlight_max(axis=0, color="rgba(0, 112, 243, 0.2)"), use_container_width=True)
+st.dataframe(table_df.style.highlight_max(axis=0, color="rgba(0, 112, 243, 0.2)"), width="stretch")
 
 # ── Visual Benchmarking (Plotly) ──
 st.divider()
@@ -64,4 +64,4 @@ fig.update_layout(
     margin=dict(l=0, r=0, t=50, b=0),
     height=400
 )
-st.plotly_chart(fig, use_container_width=True, theme="streamlit", config={'displayModeBar': False})
+st.plotly_chart(fig, width="stretch", theme="streamlit", config={'displayModeBar': False})

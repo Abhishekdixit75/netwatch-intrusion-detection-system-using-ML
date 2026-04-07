@@ -48,7 +48,7 @@ if alerts:
             margin=dict(l=0, r=0, t=20, b=0),
             height=250
         )
-        st.plotly_chart(fig, use_container_width=True, theme="streamlit", config={'displayModeBar': False})
+        st.plotly_chart(fig, width="stretch", theme="streamlit", config={'displayModeBar': False})
     else:
         st.caption("Monitoring Active / No Trends Captured")
 
@@ -66,4 +66,4 @@ fig2.update_layout(
     margin=dict(l=0, r=0, t=10, b=0),
     height=max(150, min(400, len(dist_df)*40 + 50))
 )
-st.plotly_chart(fig2, use_container_width=True, theme="streamlit", config={'displayModeBar': False})
+st.plotly_chart(fig2, width="stretch", theme="streamlit", config={'displayModeBar': False})
